@@ -1,6 +1,6 @@
-BIN = my_triangle
+BIN = my_cube
 
-OBJ = glad.o my_triangle.o 
+OBJ = glad.o my_cube.o 
 
 CC = g++ 
 
