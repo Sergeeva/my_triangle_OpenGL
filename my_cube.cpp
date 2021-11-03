@@ -10,19 +10,23 @@
 
 #include <iostream>
 
+#include "stb_image.h" //tex loader
 
 //вершинный шейдер -->shader.vs
 
 const char* vertexShaderSrc = "#version 460 core\n"
 "layout (location = 0) in vec3 aPos;\n"
 "layout (location = 1) in vec3 aColor;\n"
+"layout (location = 2) in vec2 aTexCoord;\n"
 "out vec3 ourColor;\n"
+"out vec2 TexCoord;\n"
 "uniform mat4 model;\n"
 "uniform mat4 view;\n"
 "uniform mat4 proj;\n"
 "void main(){\n"
 "gl_Position = proj*view*model*vec4(aPos.x, aPos.y, aPos.z, 1.0f);\n"
 "ourColor = aColor;\n"
+"TexCoord = aTexCoord;\n"
 "}\n\0";
 
 
@@ -31,8 +35,10 @@ const char* vertexShaderSrc = "#version 460 core\n"
 const char* fragmentShaderSrc = "#version 460 core\n"
 "out vec4 FragColor;\n"
 "in vec3 ourColor;\n"
+"in vec2 TexCoord;\n"
+"uniform sampler2D Tex1;\n"
 "void main(){\n"
-"FragColor = vec4(ourColor, 1.0f);\n"
+"FragColor = texture(Tex1, TexCoord);\n"
 "}\n\0";
 
   
@@ -125,24 +131,49 @@ int main(int argc, char *argv[]) {
  glDeleteShader(vertexShader);
  glDeleteShader(fragmentShader);
 
+//
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 
+//filter (scaling)
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+
+ //Загружаем и создаём текстуры
+ int tex_w, tex_h, tex_numCh;
+ unsigned char *tex1_data = stbi_load("texture/container.jpg", &tex_w, &tex_h, &tex_numCh, 0);
  
+ //gen texture
+ unsigned int tex1_id;
+ glGenTextures(1, &tex1_id);
+ glBindTexture(GL_TEXTURE_2D, tex1_id);
+ glTexImage2D(GL_TEXTURE_2D, 
+              0, //mipmap level 
+              GL_RGB, 
+              tex_w, tex_h, 
+              0, //unused 
+              GL_RGB, GL_UNSIGNED_BYTE, //format + datatype of the source 
+              tex1_data);
+ glGenerateMipmap(GL_TEXTURE_2D);
+ stbi_image_free(tex1_data);
+
 // Входные координаты
 //Куб имеет 8 уникальных вершин
  float VertexData[] = {
     // pos:3xfloat, colors:3xfloat; texture coords:2xfloat  
-   -0.5,  -0.5, -0.5,  1.00, 0.00, 0.00, 0.00, 0.00, //0
-   -0.5,  -0.5,  0.5,  0.00, 1.00, 0.00, 0.00, 1.00, //1
-   0.5,   -0.5,  0.5,  0.00, 0.00, 1.00, 1.00, 1.00, //2
-   0.5,   -0.5, -0.5,  0.00, 1.00, 0.00, 1.00, 0.00, //3
-   -0.5,   0.5, -0.5,  0.00, 0.00, 1.00, 0.00, 0.00, //4
+   -0.5,  -0.5, -0.5,  1.00, 0.00, 0.00, 0.00, 0.00, //0 //
+   -0.5,  -0.5,  0.5,  0.00, 1.00, 0.00, 0.00, 0.00, //1
+   0.5,   -0.5,  0.5,  0.00, 0.00, 1.00, 0.00, 1.00, //2
+   0.5,   -0.5, -0.5,  0.00, 1.00, 0.00, 1.00, 0.00, //3 //
+   -0.5,   0.5, -0.5,  0.00, 0.00, 1.00, 0.00, 1.00, //4 //
    -0.5,   0.5,  0.5,  0.00, 1.00, 0.00, 0.00, 1.00, //5
    0.5,    0.5,  0.5,  1.00, 0.00, 0.00, 1.00, 1.00, //6
-   0.5,    0.5, -0.5,  0.00, 1.00, 0.00, 1.00, 0.00  //7
+   0.5,    0.5, -0.5,  0.00, 1.00, 0.00, 1.00, 1.00  //7 //
 
  };
 
- //12 трекгольников 
+ //12 треугольников 
   unsigned int ind[] = {
     //передняя сторона
     0, 1, 2, 
@@ -189,8 +220,8 @@ int main(int argc, char *argv[]) {
    glEnableVertexAttribArray(1);
 
    //текстура
-   //   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
-   //   glEnableVertexAttribArray(2);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
+  glEnableVertexAttribArray(2);
 
    
    ////////////////////////////////
@@ -212,7 +243,7 @@ int main(int argc, char *argv[]) {
         //Определяем  матрицы:
      //model; view; projection 
      glm::mat4 model = glm::mat4(1.0f);
-     model = glm::rotate(model, (float)glfwGetTime()*glm::radians(-50.0f),
+     model = glm::rotate(model, (float)glfwGetTime()*glm::radians(45.0f),
 			 glm::vec3(1.0f, 0.5f, 0.0f));
      
      glm::mat4 view = glm::mat4(1.0f);
@@ -235,8 +266,10 @@ int main(int argc, char *argv[]) {
      unsigned int projLoc = glGetUniformLocation(shaderProgram, "proj");
      glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
 
+     glUniform1i(glGetUniformLocation(shaderProgram, "Tex1"),0);
 
-
+     glActiveTexture(GL_TEXTURE0);
+     glBindTexture(GL_TEXTURE_2D, tex1_id);
      glBindVertexArray(VAO);
      // DrawTriangle :: сборка примитива
      //glDrawArrays(GL_TRIANGLES, 0, 36); //
