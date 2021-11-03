@@ -1,6 +1,6 @@
 BIN = my_cube
 
-OBJ = glad.o my_cube.o 
+OBJ = stb_image.o glad.o my_cube.o 
 
 CC = g++ 
 
