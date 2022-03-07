@@ -12,6 +12,8 @@
 
 #include "stb_image.h" //tex loader
 
+#include <vector>
+
 //вершинный шейдер -->shader.vs
 
 const char* vertexShaderSrc = "#version 460 core\n"
@@ -19,14 +21,14 @@ const char* vertexShaderSrc = "#version 460 core\n"
 "layout (location = 1) in vec3 aColor;\n"
 "layout (location = 2) in vec2 aTexCoord;\n"
 "out vec3 ourColor;\n"
-"out vec2 TexCoord;\n"
+"out vec3 TexCoord;\n"
 "uniform mat4 model;\n"
 "uniform mat4 view;\n"
 "uniform mat4 proj;\n"
 "void main(){\n"
 "gl_Position = proj*view*model*vec4(aPos.x, aPos.y, aPos.z, 1.0f);\n"
 "ourColor = aColor;\n"
-"TexCoord = aTexCoord;\n"
+"TexCoord = aPos;\n"
 "}\n\0";
 
 
@@ -35,10 +37,10 @@ const char* vertexShaderSrc = "#version 460 core\n"
 const char* fragmentShaderSrc = "#version 460 core\n"
 "out vec4 FragColor;\n"
 "in vec3 ourColor;\n"
-"in vec2 TexCoord;\n"
-"uniform sampler2D Tex1;\n"
+"in vec3 TexCoord;\n"
+"uniform samplerCube Tex1;\n"
 "void main(){\n"
-"FragColor = texture(Tex1, TexCoord);\n"
+"FragColor = texture(Tex1, TexCoord)*vec4(ourColor, 0.0f);\n"
 "}\n\0";
 
   
@@ -144,7 +146,7 @@ glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
  int tex_w, tex_h, tex_numCh;
  unsigned char *tex1_data = stbi_load("texture/container.jpg", &tex_w, &tex_h, &tex_numCh, 0);
  
- //gen texture
+//gen texture: single
  unsigned int tex1_id;
  glGenTextures(1, &tex1_id);
  glBindTexture(GL_TEXTURE_2D, tex1_id);
@@ -156,22 +158,117 @@ glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
               GL_RGB, GL_UNSIGNED_BYTE, //format + datatype of the source 
               tex1_data);
  glGenerateMipmap(GL_TEXTURE_2D);
+ 
  stbi_image_free(tex1_data);
 
+//////////////////////////////////////////////////////////////////////////
+//texture: cubemap
+
+unsigned int texcube_id;
+glGenTextures(1, &texcube_id);
+glBindTexture(GL_TEXTURE_CUBE_MAP, texcube_id);
+
+std::vector<std::string> texcube_faces = 
+{
+"texture/container_RIGHT.jpg", //right
+"texture/container_LEFT.jpg", //left 
+"texture/container_TOP.jpg", //top
+"texture/container_BOTTOM.jpg", //bottom
+"texture/container_FRONT.jpg", //front
+"texture/container_BACK.jpg", //back
+};
+
+for (unsigned int i=0; i<6; i++){
+  tex1_data = stbi_load(texcube_faces[i].c_str(), &tex_w, &tex_h, &tex_numCh, 0);
+  if (tex1_data){
+  glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 
+                0, //mipmap level 
+                GL_RGB, 
+                tex_w, tex_h, 
+                0, //unused 
+                GL_RGB, GL_UNSIGNED_BYTE, //format + datatype of the source 
+                tex1_data);
+    glGenerateMipmap(GL_TEXTURE_2D); 
+
+  std::cout<<"w = "<<tex_w<<" h = "<<tex_h<<" numCh = "<<tex_numCh<<std::endl;
+
+  }else{
+    std::cout<<"Loading FAILED"<<texcube_faces[i].c_str()<<std::endl;
+  }
+    stbi_image_free(tex1_data); 
+}
+
+//Wrapping and Filtering
+glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+
+/////////////////////////////////////////////////////////////////////////////////
 // Входные координаты
 //Куб имеет 8 уникальных вершин
+/*
  float VertexData[] = {
-    // pos:3xfloat, colors:3xfloat; texture coords:2xfloat  
-   -0.5,  -0.5, -0.5,  1.00, 0.00, 0.00, 0.00, 0.00, //0 //
-   -0.5,  -0.5,  0.5,  0.00, 1.00, 0.00, 0.00, 0.00, //1
-   0.5,   -0.5,  0.5,  0.00, 0.00, 1.00, 0.00, 1.00, //2
-   0.5,   -0.5, -0.5,  0.00, 1.00, 0.00, 1.00, 0.00, //3 //
-   -0.5,   0.5, -0.5,  0.00, 0.00, 1.00, 0.00, 1.00, //4 //
-   -0.5,   0.5,  0.5,  0.00, 1.00, 0.00, 0.00, 1.00, //5
-   0.5,    0.5,  0.5,  1.00, 0.00, 0.00, 1.00, 1.00, //6
-   0.5,    0.5, -0.5,  0.00, 1.00, 0.00, 1.00, 1.00  //7 //
+    // pos:3xfloat,    colors:3xfloat;    
+   -0.5,  -0.5, -0.5,  1.00, 0.00, 0.00,  //0 
+   -0.5,  -0.5,  0.5,  0.00, 1.00, 0.00,  //1 
+   0.5,   -0.5,  0.5,  0.00, 0.00, 1.00,  //2
+   0.5,   -0.5, -0.5,  0.00, 1.00, 0.00,  //3 
+   -0.5,   0.5, -0.5,  0.00, 0.00, 1.00,  //4 
+   -0.5,   0.5,  0.5,  0.00, 1.00, 0.00,  //5
+   0.5,    0.5,  0.5,  1.00, 0.00, 0.00,  //6
+   0.5,    0.5, -0.5,  0.00, 1.00, 0.00,  //7 
 
  };
+*/
+
+ float VertexData[] = {
+  // pos:3xfloat,       colors:3xfloat;     texture coords:2xfloat  
+  -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,   0.0f, 0.0f, 
+   0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,   1.0f, 0.0f, 
+   0.5f, 0.5f, -0.5f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,
+   0.5f, 0.5f, -0.5f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,
+  -0.5f, 0.5f, -0.5f,   1.0f, 0.0f, 0.0f,   0.0f, 1.0f, 
+  -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,   0.0f, 0.0f, 
+
+  -0.5f, -0.5f, 0.5f,  1.0f, 1.0f, 0.0f,   0.0f, 0.0f, 
+   0.5f, -0.5f, 0.5f,  1.0f, 1.0f, 0.0f,   1.0f, 0.0f, 
+   0.5f, 0.5f,  0.5f,  1.0f, 1.0f, 0.0f,   1.0f, 1.0f,
+   0.5f, 0.5f,  0.5f,  1.0f, 1.0f, 0.0f,   1.0f, 1.0f,
+  -0.5f, 0.5f,  0.5f,  1.0f, 1.0f, 0.0f,   0.0f, 1.0f, 
+  -0.5f, -0.5f, 0.5f,  1.0f, 1.0f, 0.0f,   0.0f, 0.0f, 
+
+  -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 1.0f,   0.0f, 0.0f, 
+  -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, 1.0f,   1.0f, 0.0f, 
+  -0.5f,  0.5f,  0.5f,  0.0f, 0.0f, 1.0f,   1.0f, 1.0f,
+  -0.5f,  0.5f,  0.5f,  0.0f, 0.0f, 1.0f,   1.0f, 1.0f,
+  -0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 1.0f,   0.0f, 1.0f, 
+  -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 1.0f,   0.0f, 0.0f, 
+
+  0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f, 
+  0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 0.0f,   1.0f, 0.0f, 
+  0.5f,  0.5f,  0.5f,  0.0f, 1.0f, 0.0f,   1.0f, 1.0f,
+  0.5f,  0.5f,  0.5f,  0.0f, 1.0f, 0.0f,   1.0f, 1.0f,
+  0.5f,  0.5f, -0.5f,  0.0f, 1.0f, 0.0f,   0.0f, 1.0f, 
+  0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f, 
+
+  -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 1.0f,   0.0f, 0.0f, 
+  -0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 1.0f,   1.0f, 0.0f, 
+   0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 1.0f,   1.0f, 1.0f,
+   0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 1.0f,   1.0f, 1.0f,
+   0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 1.0f,   0.0f, 1.0f, 
+  -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 1.0f,   0.0f, 0.0f, 
+
+  -0.5f, 0.5f, -0.5f,  0.5f, 0.3f, 0.5f,   0.0f, 0.0f, 
+  -0.5f, 0.5f,  0.5f,  0.5f, 0.3f, 0.5f,   1.0f, 0.0f, 
+   0.5f, 0.5f,  0.5f,  0.5f, 0.3f, 0.5f,   1.0f, 1.0f,
+   0.5f, 0.5f,  0.5f,  0.5f, 0.3f, 0.5f,   1.0f, 1.0f,
+   0.5f, 0.5f, -0.5f,  0.5f, 0.3f, 0.5f,   0.0f, 1.0f, 
+  -0.5f, 0.5f, -0.5f,  0.5f, 0.3f, 0.5f,   0.0f, 0.0f, 
+}; 
+
 
  //12 треугольников 
   unsigned int ind[] = {
@@ -209,7 +306,7 @@ glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
    glGenBuffers(1, &EBO);
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
    // --> индексы
-   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(ind), ind, GL_STATIC_DRAW);
+   //glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(ind), ind, GL_STATIC_DRAW);
    
    //координаты
    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
@@ -266,14 +363,16 @@ glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
      unsigned int projLoc = glGetUniformLocation(shaderProgram, "proj");
      glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
 
-     glUniform1i(glGetUniformLocation(shaderProgram, "Tex1"),0);
+     //glUniform1i(glGetUniformLocation(shaderProgram, "tex1_id"), 0);
+     glUniform1i(glGetUniformLocation(shaderProgram, "texcube_id"), 0);
 
      glActiveTexture(GL_TEXTURE0);
-     glBindTexture(GL_TEXTURE_2D, tex1_id);
+     //glBindTexture(GL_TEXTURE_2D, tex1_id);
+     glBindTexture(GL_TEXTURE_CUBE_MAP, texcube_id);
      glBindVertexArray(VAO);
      // DrawTriangle :: сборка примитива
-     //glDrawArrays(GL_TRIANGLES, 0, 36); //
-     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+     glDrawArrays(GL_TRIANGLES, 0, 36); //
+     //glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
      //////////////////////////////
      //     glBindVertexArray(0);
      
