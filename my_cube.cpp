@@ -14,6 +14,9 @@
 
 #include <vector>
 
+#include "Shader.h"
+
+/*
 //вершинный шейдер -->shader.vs
 
 const char* vertexShaderSrc = "#version 460 core\n"
@@ -31,8 +34,6 @@ const char* vertexShaderSrc = "#version 460 core\n"
 "TexCoord = aPos;\n"
 "}\n\0";
 
-
-
 //фрагментный шейдер -->shader.fs
 const char* fragmentShaderSrc = "#version 460 core\n"
 "out vec4 FragColor;\n"
@@ -43,10 +44,9 @@ const char* fragmentShaderSrc = "#version 460 core\n"
 "FragColor = texture(Tex1, TexCoord)*vec4(ourColor, 0.0f);\n"
 "}\n\0";
 
+*/
   
-
-
-////////////////////////////////////////////
+///////////////////////////\0/////////////////
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int heigth);
@@ -87,6 +87,7 @@ int main(int argc, char *argv[]) {
 
   glEnable(GL_DEPTH_TEST);
 
+/*
  //Компилируем  шейдеры
 
  //Вершинный
@@ -132,6 +133,10 @@ int main(int argc, char *argv[]) {
 //теперь шейдеры можно удалить
  glDeleteShader(vertexShader);
  glDeleteShader(fragmentShader);
+*/ 
+//-->
+Shader myShader("my_vertex_shader.glsl", "my_fragment_shader.glsl");
+
 
 //
 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
@@ -190,7 +195,7 @@ for (unsigned int i=0; i<6; i++){
                 tex1_data);
     glGenerateMipmap(GL_TEXTURE_2D); 
 
-  std::cout<<"w = "<<tex_w<<" h = "<<tex_h<<" numCh = "<<tex_numCh<<std::endl;
+  //std::cout<<"w = "<<tex_w<<" h = "<<tex_h<<" numCh = "<<tex_numCh<<std::endl;
 
   }else{
     std::cout<<"Loading FAILED"<<texcube_faces[i].c_str()<<std::endl;
@@ -209,7 +214,7 @@ glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 /////////////////////////////////////////////////////////////////////////////////
 // Входные координаты
 //Куб имеет 8 уникальных вершин
-/*
+
  float VertexData[] = {
     // pos:3xfloat,    colors:3xfloat;    
    -0.5,  -0.5, -0.5,  1.00, 0.00, 0.00,  //0 
@@ -222,8 +227,8 @@ glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    0.5,    0.5, -0.5,  0.00, 1.00, 0.00,  //7 
 
  };
-*/
 
+/*
  float VertexData[] = {
   // pos:3xfloat,       colors:3xfloat;     texture coords:2xfloat  
   -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,   0.0f, 0.0f, 
@@ -268,7 +273,7 @@ glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    0.5f, 0.5f, -0.5f,  0.5f, 0.3f, 0.5f,   0.0f, 1.0f, 
   -0.5f, 0.5f, -0.5f,  0.5f, 0.3f, 0.5f,   0.0f, 0.0f, 
 }; 
-
+*/
 
  //12 треугольников 
   unsigned int ind[] = {
@@ -306,19 +311,19 @@ glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    glGenBuffers(1, &EBO);
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
    // --> индексы
-   //glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(ind), ind, GL_STATIC_DRAW);
+   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(ind), ind, GL_STATIC_DRAW);
    
    //координаты
-   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
+   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
    glEnableVertexAttribArray(0);
 
    //цвета
-   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
+   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
    glEnableVertexAttribArray(1);
 
    //текстура
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
-  glEnableVertexAttribArray(2);
+  //glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
+  //glEnableVertexAttribArray(2);
 
    
    ////////////////////////////////
@@ -335,13 +340,14 @@ glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
      glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
      
-     glUseProgram(shaderProgram);
+     //glUseProgram(shaderProgram); -->
+     myShader.use();
 
         //Определяем  матрицы:
      //model; view; projection 
      glm::mat4 model = glm::mat4(1.0f);
      model = glm::rotate(model, (float)glfwGetTime()*glm::radians(45.0f),
-			 glm::vec3(1.0f, 0.5f, 0.0f));
+		 glm::vec3(1.0f, 0.5f, 0.0f));
      
      glm::mat4 view = glm::mat4(1.0f);
      view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
@@ -354,25 +360,25 @@ glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
      
      //->>vertex shader
-     unsigned int modelLoc = glGetUniformLocation(shaderProgram, "model");
+     unsigned int modelLoc = glGetUniformLocation(myShader.shaderProgram, "model");
      glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
-     unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
+     unsigned int viewLoc = glGetUniformLocation(myShader.shaderProgram, "view");
      glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
      
-     unsigned int projLoc = glGetUniformLocation(shaderProgram, "proj");
+     unsigned int projLoc = glGetUniformLocation(myShader.shaderProgram, "proj");
      glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
 
-     //glUniform1i(glGetUniformLocation(shaderProgram, "tex1_id"), 0);
-     glUniform1i(glGetUniformLocation(shaderProgram, "texcube_id"), 0);
+    
+     glUniform1i(glGetUniformLocation(myShader.shaderProgram, "Tex1"), 0);
 
      glActiveTexture(GL_TEXTURE0);
      //glBindTexture(GL_TEXTURE_2D, tex1_id);
      glBindTexture(GL_TEXTURE_CUBE_MAP, texcube_id);
      glBindVertexArray(VAO);
      // DrawTriangle :: сборка примитива
-     glDrawArrays(GL_TRIANGLES, 0, 36); //
-     //glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+     //glDrawArrays(GL_TRIANGLES, 0, 36); //
+     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
      //////////////////////////////
      //     glBindVertexArray(0);
      
