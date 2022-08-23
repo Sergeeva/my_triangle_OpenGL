@@ -16,6 +16,8 @@
 
 #include "Shader.h"
 
+#include "check_Error.h"
+
 /*
 //вершинный шейдер -->shader.vs
 
@@ -46,14 +48,57 @@ const char* fragmentShaderSrc = "#version 460 core\n"
 
 */
   
-///////////////////////////\0/////////////////
+////////////////////////////////////////////
 
+float rot_angle = 45.0f;
+
+glm::vec3 rot_ax(1.0f, 0.5f, 0.0f);
+
+//CallBacks Func
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int heigth);
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int heigth){
   glViewport(0,0, width, heigth);
 }
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
+{
+    if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS){
+    	glfwSetWindowShouldClose(window, GL_TRUE);
+    }
+
+     if (key == GLFW_KEY_UP && action == GLFW_PRESS){
+      rot_ax.x = 1.0f;
+      rot_ax.y = 0.5f;
+      rot_ax.z = 0.0f;
+      rot_angle = (-1)*45.0f;
+    }
+    if (key == GLFW_KEY_DOWN && action == GLFW_PRESS){
+      rot_ax.x = 1.0f;
+      rot_ax.y = 0.5f;
+      rot_ax.z = 0.0f;
+      rot_angle = 45.0f;
+    }
+
+    if (key == GLFW_KEY_LEFT && action == GLFW_PRESS){
+      rot_ax.x = 0.0f;
+      rot_ax.y = 0.5f;
+      rot_ax.z = 1.0f;
+      rot_angle = 45.0f;
+    }
+
+      if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS){
+      rot_ax.x = 0.0f;
+      rot_ax.y = 0.5f;
+      rot_ax.z = 1.0f;
+      rot_angle = (-1)*45.0f;
+    }
+}
+
+//////////////////////////////////////////////////
 
 int main(int argc, char *argv[]) {
   
@@ -72,9 +117,20 @@ int main(int argc, char *argv[]) {
     glfwTerminate();
     return -1;
   }
-  glfwMakeContextCurrent(window);
+  glfwMakeContextCurrent(window); //основной контекст окна в этом потоке
+
+
+  //SET CALLBACKS
   //вызывать на каждое изменение размеров окна
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+  //glfwGetFramebufferSize(window, &w, &h);
+  //glViewport(0,0,w,h) //<-сообщаем OGL размер окна 
+  //(или внутри framebuffer_size_callback) 
+
+  glfwSetKeyCallback(window, key_callback);
+
+  ////////////////////////////////////////////////////////////////////
 
   
   //GLAD init
@@ -280,14 +336,19 @@ glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     //передняя сторона
     0, 1, 2, 
     0, 2, 3, 
+    //
     0, 1, 4,
     0, 7, 4,
+    //
     4, 5, 6,
     4, 6, 7,
+    //
     4, 5, 1,
     5, 1, 6,
+    //
     1, 6, 2,
     7, 6, 2,
+    //
     7, 2, 3,
     0, 7, 3
   };
@@ -315,7 +376,7 @@ glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    
    //координаты
    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
-   glEnableVertexAttribArray(0);
+   glEnableVertexAttribArray(0); //in vertex_shader: location = 0 
 
    //цвета
    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
@@ -337,54 +398,66 @@ glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    //цикл рендеринга   
    while(!glfwWindowShouldClose(window)) {
 
-     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glfwPollEvents(); //проверка "управляющих" событий
+
+////////////////////////////////////////////////////////////////
+    //Отрисовка всего
+////////////////////////////////////////////////////////////////
+
+    //set state
+     glClearColor(0.2f, 0.3f, 0.3f, 1.0f); 
+    //use state (заполняет экран тем что установлено)
+     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //|GL_STENSIL_BIT
      
+
      //glUseProgram(shaderProgram); -->
      myShader.use();
 
-        //Определяем  матрицы:
+     //Определяем  матрицы:
      //model; view; projection 
      glm::mat4 model = glm::mat4(1.0f);
-     model = glm::rotate(model, (float)glfwGetTime()*glm::radians(45.0f),
-		 glm::vec3(1.0f, 0.5f, 0.0f));
+     model = glm::rotate(model, (float)glfwGetTime()*glm::radians(rot_angle), rot_ax);
      
      glm::mat4 view = glm::mat4(1.0f);
      view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-
           
      float sc = 800.0/600.0; //width/height
      glm::mat4 proj = glm::perspective(glm::radians(45.0f),
 				       sc,
 				       0.1f, 100.0f);
 
+
+     //Освещение
+     
+     
      
      //->>vertex shader
-     unsigned int modelLoc = glGetUniformLocation(myShader.shaderProgram, "model");
-     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+     unsigned int modelLoc = glGetUniformLocation(myShader.shaderProgram, "model");//запрашивает индекс
+     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));//устанавливаем значение по индексу
 
      unsigned int viewLoc = glGetUniformLocation(myShader.shaderProgram, "view");
      glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
      
      unsigned int projLoc = glGetUniformLocation(myShader.shaderProgram, "proj");
      glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
-
     
      glUniform1i(glGetUniformLocation(myShader.shaderProgram, "Tex1"), 0);
 
      glActiveTexture(GL_TEXTURE0);
      //glBindTexture(GL_TEXTURE_2D, tex1_id);
      glBindTexture(GL_TEXTURE_CUBE_MAP, texcube_id);
+
      glBindVertexArray(VAO);
      // DrawTriangle :: сборка примитива
-     //glDrawArrays(GL_TRIANGLES, 0, 36); //
-     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+     //glDrawArrays(GL_TRIANGLES, 0, 36); //из буф с вершинами GL_ARRAY_BUFFER
+     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0); //отрисовка из буф с индексами GL_ELEMENT_ARRAY_BUFFER
      //////////////////////////////
      //     glBindVertexArray(0);
-     
+
+    //////////////////
+     // Переключение буфера
      glfwSwapBuffers(window); // буффер содержит все пиксели окна, 2х буфферная схема
-     glfwPollEvents(); //проверка "управляющих" событий
-	  
+	  //////////////////
    } 
    
  //освобождение ресурсов

@@ -17,19 +17,19 @@ std::ifstream fShaderFile;
 
 try{
 
-vShaderFile.open(vertexPath);
-fShaderFile.open(fragPath);
+  vShaderFile.open(vertexPath);
+  fShaderFile.open(fragPath);
 
-std::stringstream vShaderStream;
-vShaderStream << vShaderFile.rdbuf();
-std::stringstream fShaderStream;
-fShaderStream << fShaderFile.rdbuf();
+  std::stringstream vShaderStream;
+  vShaderStream << vShaderFile.rdbuf();
+  std::stringstream fShaderStream;
+  fShaderStream << fShaderFile.rdbuf();
 
-vShaderFile.close();
-fShaderFile.close();
+  vShaderFile.close();
+  fShaderFile.close();
 
-vertexCode = vShaderStream.str();
-fragCode = fShaderStream.str();
+  vertexCode = vShaderStream.str();
+  fragCode = fShaderStream.str();
 
 }catch(std::ifstream::failure e){
     std::cout << "ERROR in OPEN SHADER SOURCES" << std::endl;
