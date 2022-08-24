@@ -18,35 +18,7 @@
 
 #include "check_Error.h"
 
-/*
-//вершинный шейдер -->shader.vs
 
-const char* vertexShaderSrc = "#version 460 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"layout (location = 1) in vec3 aColor;\n"
-"layout (location = 2) in vec2 aTexCoord;\n"
-"out vec3 ourColor;\n"
-"out vec3 TexCoord;\n"
-"uniform mat4 model;\n"
-"uniform mat4 view;\n"
-"uniform mat4 proj;\n"
-"void main(){\n"
-"gl_Position = proj*view*model*vec4(aPos.x, aPos.y, aPos.z, 1.0f);\n"
-"ourColor = aColor;\n"
-"TexCoord = aPos;\n"
-"}\n\0";
-
-//фрагментный шейдер -->shader.fs
-const char* fragmentShaderSrc = "#version 460 core\n"
-"out vec4 FragColor;\n"
-"in vec3 ourColor;\n"
-"in vec3 TexCoord;\n"
-"uniform samplerCube Tex1;\n"
-"void main(){\n"
-"FragColor = texture(Tex1, TexCoord)*vec4(ourColor, 0.0f);\n"
-"}\n\0";
-
-*/
   
 ////////////////////////////////////////////
 
@@ -141,56 +113,9 @@ int main(int argc, char *argv[]) {
 
   printf("OpenGL:: %s; GLSL:: %s \n ", glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_DEPTH_TEST); //включаем проверку глубины
 
-/*
- //Компилируем  шейдеры
 
- //Вершинный
- int vertexShader = glCreateShader(GL_VERTEX_SHADER);
- glShaderSource(vertexShader, 1, &vertexShaderSrc, NULL);
- glCompileShader(vertexShader);
-
- //Фрагментный
- int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
- glShaderSource(fragmentShader, 1, &fragmentShaderSrc, NULL);
- glCompileShader(fragmentShader);
-
- 
- //Проверяем ошибки компиляции
- int success = 0;
- char infoLog[512];
- 
- glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
- if(!success){
-   glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-   std::cout << "ERROR VERTEX SHADER COMPILATION: \n" << infoLog <<"\n";
- }
-
- glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
- if(!success){
-   glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-   std::cout << "ERROR FRAGMENT SHADER COMPILATION: \n" << infoLog <<"\n";
- }
-
- //Связывание шейдеров в шейдерную программу
- int shaderProgram = glCreateProgram();
- glAttachShader(shaderProgram, vertexShader);
- glAttachShader(shaderProgram, fragmentShader); 
- glLinkProgram(shaderProgram);
-
- //Проверка ошибок связывания
- glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
- if(!success){
-   glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-   std::cout<<"ERROR SHADER PROGRAMM LINKING: \n" <<infoLog << "\n";
- }
- 
-//теперь шейдеры можно удалить
- glDeleteShader(vertexShader);
- glDeleteShader(fragmentShader);
-*/ 
-//-->
 Shader myShader("my_vertex_shader.glsl", "my_fragment_shader.glsl");
 
 
@@ -425,6 +350,8 @@ glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
      glm::mat4 proj = glm::perspective(glm::radians(45.0f),
 				       sc,
 				       0.1f, 100.0f);
+
+    //glm::ortho(0.0f, 800f, 0.0f, 600.0f, 0.1f, 100.0f)
 
 
      //Освещение

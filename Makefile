@@ -1,6 +1,6 @@
-BIN = my_cube
+BIN = many_cubes_lighted #my_cube
 
-OBJ = stb_image.o glad.o Shader.o my_cube.o 
+OBJ = stb_image.o glad.o Shader.o many_cubes_lighted.o  #my_cube.o 
 
 CC = g++ 
 
