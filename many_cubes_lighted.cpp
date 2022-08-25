@@ -323,13 +323,14 @@ glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 
     //-> frag shader
-        GLint objectColorLoc = glGetUniformLocation(myShader.shaderProgram, "objectColor");
-        GLint lightColorLoc  = glGetUniformLocation(myShader.shaderProgram, "lightColor");
-        GLint lightPosLoc    = glGetUniformLocation(myShader.shaderProgram, "lightPos");
+        int objectColorLoc = glGetUniformLocation(myShader.shaderProgram, "objectColor");
+        int lightColorLoc  = glGetUniformLocation(myShader.shaderProgram, "lightColor");
+        int lightPosLoc    = glGetUniformLocation(myShader.shaderProgram, "lightPos");
+        int camPosLoc    = glGetUniformLocation(myShader.shaderProgram, "camPos");
         glUniform3f(objectColorLoc, 1.0f, 0.5f, 0.31f);
         glUniform3f(lightColorLoc,  1.0f, 1.0f, 1.0f);
         glUniform3f(lightPosLoc,    lightPos.x, lightPos.y, lightPos.z);
-
+        glUniform3f(camPosLoc,    camX, camY, camZ);
 
       glBindVertexArray(VAO);
       // DrawTriangle :: сборка примитива
